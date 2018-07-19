@@ -1,0 +1,619 @@
+/***********************welcome handler**************************************/
+response = Map();
+response.put("text","Hi " + user.get("first_name") + ",type `help` to get started!");
+response.put("suggestions",{"list":{{"text":"help"}}});
+return response;
+/***********************message handler*************************************/
+
+response = Map();
+info message;
+if(message.containsIgnoreCase("help") || message.containsIgnoreCase("what you can do"))
+{
+	response = {"text":"*Hey!* :happy: Great to see you!","card":{"title":":task: Todoist"},"slides":{{"type":"text","title":":task: Creating and Updating Tasks","data":"You can create, update and close  tasks.\n*. Creating New Tasks*: start by typing: `new task` \n*.  View details of single task*: type `view task`\n*. Updating Tasks* : type `change task`\n*. for add task in project:* type `add task in project` \n*. for updating task names,* use format: `old_name-new_name`"},{"type":"text","title":":task: Creating and Updating Projects","data":"You can view, create, update project.\n*. Creating New Project*: type `new project`\n*. View all Projects:* type `view all projects`\n*. View details of single project*: `view project`\n*. To Change any project details,* use `change project`\n*. to update project,* use syntax:\n `oldprojectname-newprojectname`"},{"type":"text","title":" :task: Share  Projects","data":"You can share a project as a whole to a user using the user's email address.\n*. To share a project with user*: type `share project`\n\n*For Sharing Projects* The *project name* and the *email* of the user with whom the project is to be shared are required."},{"type":"text","title":":task: Search for the task using keyword","data":"In-order to filter the required task using known keyword:type `search for task`"},{"type":"text","title":":task: Daily Tasks Reminders","data":"Todoist Bot uses a Scheduler to fetch all the projects scheduled for completion for the day and displays them in a neat table for you daily! "}}};
+	response.put("suggestions",{"list":{{"text":"view all projects"},{"text":"search for task"},{"text":"new task"},{"text":"change task"},{"text":"change project"}}});
+}
+else if(message.containsIgnoreCase("change project"))
+{
+	context = {"id":"project","timeout":"30","params":{{"name":"confirmation","question":"!what do you like to change with your projects?","suggestions":{"list":{{"text":"New Project"},{"text":"Update Project"}}}},{"name":"projname","question":" !*The Project Name ?* \nIf a Project is being updated,\nUse Syntax: `<old_name>-<new_name>` "}}};
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("view all project") || message.containsIgnoreCase("view all projects"))
+{
+	responseJson = invokeurl
+	[
+		url :"https://beta.todoist.com/API/v8/projects"
+		type :GET
+		connection:"todoista"
+	];
+	number = 0;
+	rows = List();
+	for each  data in responseJson
+	{
+		number = number + 1;
+		content = data.get("name");
+		row = Map();
+		row.put("Project Name"," :task: " + content);
+		row.put("View tasks","[+Task List](invoke.function|todoisttwo|" + "ruthrakumar98@gmail.com" + "|" + data.get("id") + ")");
+		rows.add(row);
+	}
+	response = {"text":"Hey there, your list of Projects is here! type `share project` to share a project :cool: ","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"},"slides":{{"type":"table","title":"","data":{"headers":{"Project Name","View tasks"},"rows":rows}}}};
+	response.put("suggestions",{"list":{{"text":"help"},{"text":"add task to project"},{"text":"share project"}}});
+}
+else if(message.containsIgnoreCase("view project"))
+{
+	context = '{"id":"projects","timeout":"30","params":[{"name":"projnam","question":"!Project Name ? :happy: "}]}'.toMap();
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("view all tasks") || message.containsIgnoreCase("view all task") || message.containsIgnoreCase("view tasks"))
+{
+	tasks = List();
+	responseJson = invokeurl
+	[
+		url :"https://beta.todoist.com/API/v8/tasks"
+		type :GET
+		connection:"todoista"
+	];
+	number = 0;
+	rows = List();
+	for each  data in responseJson
+	{
+		info data;
+		number = number + 1;
+		content = data.get("content");
+		url = data.get("url");
+		row = Map();
+		row.put("Task number",number + ")");
+		row.put("Task Name"," :task: " + content);
+		row.put("Mark as complete","[+Complete](invoke.function|todoistone|" + user.get("email") + "|" + data.get("id") + ")");
+		row.put("View Task","[View Task](" + url + ")");
+		rows.add(row);
+	}
+	response = {"text":"Hey there, your list of tasks is here! ,type `assign task to user` to assign task!","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"},"slides":{{"type":"table","title":"","data":{"headers":{"Task number","Task Name","Mark as complete","View Task"},"rows":rows}}}};
+	response.put("suggestions",{"list":{{"text":"view all project"}}});
+}
+else if(message.containsIgnoreCase("new task"))
+{
+	context = '{"id":"tasks","timeout":"30","params":[{"name":"projnam","question":"!Name of the new Task? :happy: "},{"name":"date","question":"!Please enter due date in the following format: `yyyy-mm-dd` \n*Example* : `2018-03-09` "}]}'.toMap();
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("view task"))
+{
+	context = {"id":"taskss","timeout":"30","params":{{"name":"proj","question":"!what is the name of the task? :happy: "}}};
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("change task"))
+{
+	context = {"id":"tasker","timeout":"30","params":{{"name":"confirmations","question":"What Operation would you like to perform ?","suggestions":{"list":{{"text":"Update Task"},{"text":"Close Task"}}}},{"name":"tasknname","question":"Name of the Task ?\nIf a Task is being updated,\n*Use Syntax:* `<old_name>-<new_name>` "}}};
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("new project"))
+{
+	context = '{"id":"pro","timeout":"30","params":[{"name":"projn","question":" *Name of New Project ?* :happy: "}]}'.toMap();
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("add task to project"))
+{
+	context = '{"id":"er","timeout":"30","params":[{"name":"label11","question":"Name of the project to add the task to ?"},{"name":"labelname","question":"New Task Name ?"}]}'.toMap();
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("share project"))
+{
+	context = '{"id":"proshare","timeout":"30","params":[{"name":"projnsh","question":"!what is the name of the Project? :happy: "},{"name":"projnshare","question":"!what is the email_id of the contributor? :happy: "}]}'.toMap();
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("assign task to user"))
+{
+	context = '{"id":"prosharee","timeout":"30","params":[{"name":"projnshh","question":"Task Name?"},{"name":"ojnsharee","question":"!what is the name of the Existing Project? :happy: "},{"name":"projnsharee","question":"!Contributor Name formatted as `Firstname<space> (Initial in capital letter) <fullstop>` ? :happy: "}]}'.toMap();
+	response.put("context",context);
+}
+else if(message.containsIgnoreCase("search for task"))
+{
+	context = '{"id":"search","timeout":"30","params":[{"name":"searchtask","question":"Task Name?"}]}'.toMap();
+	response.put("context",context);
+}
+else
+{
+	response.put("text","*Oops!* I couldn't understand that :blush: \n*Try typing* `help` to know how to use me :happy:");
+	response.put("suggestions",{"list":{{"text":"view all projects"},{"text":"share project"},{"text":"help"}}});
+}
+return response;
+/*************************************context handler***********************************************/
+
+response = Map();
+try 
+{
+	if(context_id.equals("project"))
+	{
+		if(answers.containKey("confirmation"))
+		{
+			if(answers.get("confirmation").get("text").containsIgnoreCase("new project"))
+			{
+				name = answers.get("projname").get("text");
+				parameter = Map();
+				header = Map();
+				uuid = invokeurl
+				[
+					url :"https://www.uuidgenerator.net/api/guid"
+				];
+				uuid = uuid.toString();
+				header = {"Content-Type":"application/json"};
+				parameter = {"name":name};
+				responseJson = invokeurl
+				[
+					url :"https://beta.todoist.com/API/v8/projects"
+					type :POST
+					parameters:parameter.toString()
+					headers:header
+					connection:"todoista"
+				];
+				response.put("text","!Your New Project has been created! :happy:");
+				response.put("suggestions",{"list":{{"text":"help"}}});
+			}
+			else if(answers.get("confirmation").get("text").containsIgnoreCase("update project"))
+			{
+				arguments = answers.get("projname").get("text").toList("-");
+				responseJson = invokeurl
+				[
+					url :"https://beta.todoist.com/API/v8/projects"
+					type :GET
+					connection:"todoista"
+				];
+				number = 0;
+				ID = "";
+				for each  data in responseJson
+				{
+					if(data.getJSON("name") == arguments.get(0))
+					{
+						ID = data.getJSON("id");
+					}
+				}
+				name = arguments.get(1).toString();
+				parameter = Map();
+				header = Map();
+				uuid = invokeurl
+				[
+					url :"https://www.uuidgenerator.net/api/guid"
+				];
+				uuid = uuid.toString();
+				header = {"Content-Type":"application/json"};
+				parameter = {"name":name};
+				responseData = invokeurl
+				[
+					url :"https://beta.todoist.com/API/v8/projects/" + ID
+					type :POST
+					parameters:parameter.toString()
+					headers:header
+					connection:"todoista"
+				];
+				response.put("text","!Successfully Updated! :happy: ");
+				response.put("suggestions",{"list":{{"text":"help"}}});
+			}
+		}
+	}
+	else if(context_id.equals("projects"))
+	{
+		name = answers.get("projnam").get("text");
+		responseJson = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/projects"
+			type :GET
+			connection:"todoista"
+		];
+		number = 0;
+		Name = "";
+		ID = "";
+		comment_count = "";
+		order = "";
+		projectData = List();
+		indent = "";
+		for each  data in responseJson
+		{
+			if(data.getJSON("name") == name)
+			{
+				Name = data.getJSON("name");
+				ID = data.getJSON("id");
+				comment_count = data.getJSON("comment_count");
+				order = data.getJSON("order");
+				indent = data.getJSON("indent");
+			}
+		}
+		if(Name.equalsIgnoreCase(""))
+		{
+			response.put("text"," !*Oops!* you have made a mistake :blush: Try from the first :Thinking: ");
+		}
+		else
+		{
+			projectData.add("*Name* : " + Name);
+			projectData.add("*ID* : " + ID);
+			projectData.add("*Comments* : " + comment_count);
+			projectData.add("*Order* : " + order);
+			projectData.add("*Indent* : 	" + indent);
+			response = {"text":"Here's are the details on your Project","card":{"title":":task: Project Details"},"slides":{{"type":"list","title":"Details","data":projectData}}};
+			response.put("suggestions",{"list":{{"text":"help"}}});
+		}
+	}
+	else if(context_id.equals("tasks"))
+	{
+		name = answers.get("projnam").get("text");
+		date = answers.get("date").get("text");
+		parameter = Map();
+		header = Map();
+		uuid = invokeurl
+		[
+			url :"https://www.uuidgenerator.net/api/guid"
+		];
+		uuid = uuid.toString();
+		header = {"Content-Type":"application/json"};
+		parameter = {"content":name,"due_date":date};
+		responseJson = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/tasks"
+			type :POST
+			parameters:parameter.toString()
+			headers:header
+			connection:"todoista"
+		];
+		response.put("text","!Great! :happy: New Task Created!");
+		response.put("suggestions",{"list":{{"text":"help"}}});
+	}
+	else if(context_id.equals("taskss"))
+	{
+		name = answers.get("proj").get("text");
+		responseJson = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/tasks"
+			type :GET
+			connection:"todoista"
+		];
+		number = 0;
+		Name = "Not Found";
+		ID = "Not Found";
+		listData = List();
+		comment_count = "Not Found";
+		order = "Not Found";
+		indent = "Not Found";
+		for each  data in responseJson
+		{
+			if(data.getJSON("content") == name)
+			{
+				Name = data.getJSON("content");
+				ID = data.getJSON("id");
+				comment_count = data.getJSON("comment_count");
+				order = data.getJSON("order");
+				indent = data.getJSON("indent");
+			}
+		}
+		if(Name.equalsIgnoreCase("Not Found"))
+		{
+			response.put("text"," !*Oops!* you have made a mistake :blush: Try from the first :Thinking: ");
+			response.put("suggestions",{"list":{{"text":"help"}}});
+		}
+		else
+		{
+			listData.add("*Name* : " + Name);
+			listData.add("*ID* : " + ID);
+			listData.add("*Comments* : " + comment_count);
+			listData.add("*Order* : " + order);
+			listData.add("*indent* : " + indent);
+			response = {"text":"Here's are the details on your Task","card":{"title":":task: Task Details"},"slides":{{"type":"list","title":"Details","data":listData}}};
+			response.put("suggestions",{"list":{{"text":"help"}}});
+		}
+	}
+	else if(context_id.equals("tasker"))
+	{
+		if(answers.get("confirmations").get("text").containsIgnoreCase("update task"))
+		{
+			arguments = answers.get("tasknname").get("text").toList("-");
+			responseJson = invokeurl
+			[
+				url :"https://beta.todoist.com/API/v8/tasks"
+				type :GET
+				connection:"todoista"
+			];
+			number = 0;
+			ID = "";
+			for each  data in responseJson
+			{
+				if(data.getJSON("content") == arguments.get(0))
+				{
+					ID = data.getJSON("id");
+				}
+			}
+			name = arguments.get(1).toString();
+			parameter = Map();
+			header = Map();
+			uuid = invokeurl
+			[
+				url :"https://www.uuidgenerator.net/api/guid"
+			];
+			uuid = uuid.toString();
+			header = {"Content-Type":"application/json"};
+			parameter = {"content":name};
+			responseData = invokeurl
+			[
+				url :"https://beta.todoist.com/API/v8/tasks/" + ID
+				type :POST
+				parameters:parameter.toString()
+				headers:header
+				connection:"todoista"
+			];
+			response.put("text","!Successfully Updated! :happy: ");
+			response.put("suggestions",{"list":{{"text":"help"}}});
+		}
+		if(answers.get("confirmations").get("text").containsIgnoreCase("close task"))
+		{
+			arguments = answers.get("tasknname").get("text");
+			responseJson = invokeurl
+			[
+				url :"https://beta.todoist.com/API/v8/tasks"
+				type :GET
+				connection:"todoista"
+			];
+			ID = "";
+			for each  data in responseJson
+			{
+				if(data.getJSON("content") == arguments)
+				{
+					ID = data.getJSON("id");
+				}
+			}
+			responseData = invokeurl
+			[
+				url :"https://beta.todoist.com/API/v8/tasks/" + ID + "/close"
+				type :POST
+				connection:"todoista"
+			];
+			response.put("text","!Successfully Closed :happy: ");
+			response.put("suggestions",{"list":{{"text":"help"}}});
+		}
+	}
+	else if(context_id.equals("pro"))
+	{
+		name = answers.get("projn").get("text");
+		parameter = Map();
+		header = Map();
+		uuid = invokeurl
+		[
+			url :"https://www.uuidgenerator.net/api/guid"
+		];
+		uuid = uuid.toString();
+		header = {"Content-Type":"application/json"};
+		parameter = {"name":name};
+		responseJson = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/projects"
+			type :POST
+			parameters:parameter.toString()
+			headers:header
+			connection:"todoista"
+		];
+		response.put("text","!New Project Created! :happy: ");
+		response.put("suggestions",{"list":{{"text":"help"}}});
+	}
+	else if(context_id.equals("er"))
+	{
+		primaryName = answers.get("label11").get("text").toList(":");
+		secondaryName = answers.get("labelname").get("text").toList(":");
+		responseJson = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/projects"
+			type :GET
+			connection:"todoista"
+		];
+		number = 0;
+		idVariable = "";
+		for each  data in responseJson
+		{
+			if(data.getJson("name") == primaryName.get(0))
+			{
+				idVariable = data.getJson("id");
+			}
+		}
+		parameter = Map();
+		header = Map();
+		uuid = invokeurl
+		[
+			url :"https://www.uuidgenerator.net/api/guid"
+		];
+		uuid = uuid.toString();
+		header = {"Content-Type":"application/json"};
+		parameter = {"content":secondaryName.get(0),"project_id":idVariable};
+		responseData = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/tasks"
+			type :POST
+			parameters:parameter.toString()
+			headers:header
+			connection:"todoista"
+		];
+		response.put("text","!New Task Created and added to Project");
+		response.put("suggestions",{"list":{{"text":"help"}}});
+	}
+	if(context_id.equals("proshare"))
+	{
+		name = answers.get("projnsh").get("text");
+		secondaryName = answers.get("projnshare").get("text").toString();
+		responseJson = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/projects"
+			type :GET
+			connection:"todoista"
+		];
+		idVariable = "";
+		for each  data in responseJson
+		{
+			if(data.getJSON("name") == name)
+			{
+				idVariable = data.getJSON("id");
+			}
+		}
+		uuid = invokeurl
+		[
+			url :"https://www.uuidgenerator.net/api/guid"
+		];
+		uuid = uuid.toString();
+		para = {"commands":{{"type":"share_project","uuid":uuid.trim(),"args":{"project_id":idVariable,"email":secondaryName}}}};
+		responseData = invokeurl
+		[
+			url :"https://todoist.com/api/v7/sync"
+			parameters:para.toMap()
+			connection:"todoista"
+		];
+		response.put("text","!shared successfully! :happy: ");
+		response.put("suggestions",{"list":{{"text":"help"}}});
+	}
+	if(context_id.equals("search"))
+	{
+		arguments = answers.get("searchtask").get("text");
+		responseJson = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/tasks"
+			type :GET
+			connection:"todoista"
+		];
+		responseData = invokeurl
+		[
+			url :"https://beta.todoist.com/API/v8/projects"
+			type :GET
+			connection:"todoista"
+		];
+		number = 0;
+		rows = List();
+		for each  data in responseJson
+		{
+			nameString = data.get("content").toString();
+			verificationString = arguments.get(0).toString();
+			if(containsIgnoreCase(nameString,verificationString))
+			{
+				projectid = data.get("project_id").toString();
+				number = number + 1;
+				content = data.get("content");
+				url = data.get("url");
+				row = Map();
+				row.put("Task number",number + ")");
+				row.put("Task Name"," :task: " + content);
+				for each  data in responseData
+				{
+					if(projectid.equals(data.get("id")))
+					{
+						row.put("Project Name",data.get("name"));
+					}
+				}
+				row.put("Mark as complete","[+Complete](invoke.function|todoistone|" + user.get("email") + "|" + data.get("id") + ")");
+				row.put("View Task","[+View Task](" + url + ")");
+				rows.add(row);
+			}
+		}
+		if(rows.isEmpty())
+		{
+			response.put("Text"," !*Sorry!*,There is no related task :Awe: ");
+			response.put("suggestions",{"list":{{"text":"help"}}});
+		}
+		else
+		{
+			response = {"text":"Hey there, your list of tasks is here!","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"},"slides":{{"type":"table","title":"","data":{"headers":{"Task number","Task Name","Project Name","Mark as complete","View Task"},"rows":rows}}}};
+			response.put("suggestions",{"list":{{"text":"help"}}});
+		}
+	}
+}
+ catch (e)
+{	response.put("text"," !*Oops!* you have made a mistake :blush: Try from the first :Thinking!: ");
+	response.put("suggestions",{"list":{{"text":"help"}}});
+}
+return response;
+/************************************function: todoistone*****************************/
+
+contentMap = Map();
+try 
+{
+	key = arguments.get("key").toString();
+	taskName = invokeurl
+	[
+		url :"https://beta.todoist.com/API/v8/tasks/" + key
+		type :GET
+		connection:"todoista"
+	];
+	content = taskName.get("content");
+	contentMap = {"text":"The Task *" + content + "* has been marked as completed :happy!:","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"}};
+	responseJson = invokeurl
+	[
+		url :"https://beta.todoist.com/API/v8/tasks/" + key + "/close"
+		type :POST
+		connection:"todoista"
+	];
+}
+ catch (e)
+{	contentMap = {"text":"The Task is already marked as completed :happy!:","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"}};
+}
+return contentMap;
+/**************************************function:todoisttwo********************************/
+
+contentMap = Map();
+key = arguments.toString();
+taskName = invokeurl
+[
+	url :"https://beta.todoist.com/API/v8/tasks"
+	type :GET
+	connection:"todoista"
+];
+number = 0;
+rows = List();
+for each  data in taskName
+{
+	info data.get("project_id");
+	info key;
+	variable = data.get("project_id").toString();
+	if(key.get("key").equals(variable))
+	{
+		
+		number = number + 1;
+		content = data.get("content");
+		url = data.get("url");
+		row = Map();
+		row.put("Task Name"," :task: " + content);
+		row.put("Mark as complete","[+Complete](invoke.function|todoistone|" + "ruthrakumar98@gmail.com" + "|" + data.get("id") + ")");
+		row.put("View Task","[View Task](" + url + ")");
+		rows.add(row);
+	}
+}
+if(rows.isEmpty())
+{
+	contentMap = {"text":"!Hey there, No task in this Project! :smile!: ","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"}};
+	return contentMap;
+}
+contentMap.put("suggestions",{"list":{{"text":"view all projects"}}});
+contentMap = {"text":"Hey there, your list of tasks is here! :smile!: ","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"},"slides":{{"type":"table","title":"","data":{"headers":{"Task Name","Mark as complete","View Task"},"rows":rows}}}};
+return contentMap;
+/***********************************scheduler:Todoist1***********************************/
+
+message = Map();
+responseJson = invokeurl
+[
+	url :"https://beta.todoist.com/API/v8/projects"
+	type :GET
+	connection:"todoista"
+];
+info responseJson;
+task = responseJson.toString();
+number = 0;
+if(task.size() > 0)
+{
+	rows = List();
+	for each  data in responseJson
+	{
+		number = number + 1;
+		content = data.get("name");
+		row = Map();
+		row.put("Project number",number + ")");
+		row.put("Project Name"," :task: " + content);
+		row.put("View tasks","[+Task List](invoke.function|todoisttwo|" + "ruthrakumar98@gmail.com" + "|" + data.get("id") + ")");
+		rows.add(row);
+	}
+	message = {"text":"Hey there, your list of Projects is here! type `share project` to share a project","bot":{"name":"Todoist assistant","image":"https://olisto.com/wp-content/uploads/2018/01/icon1_todoist.png"},"slides":{{"type":"table","title":"","data":{"headers":{"Project number","Project Name","View tasks"},"rows":rows}}}};
+}
+else
+{
+	message = {"text":"Looks like there are no tasks for today! :grinning: "};
+}
+zoho.cliq.postToBot("todoistassistant",message);
+/**********************************************************************************/
