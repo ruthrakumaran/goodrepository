@@ -1,0 +1,1635 @@
+/*************bot handlers**************/Github Bot
+
+/***************************************welcome handler**************************************/
+
+response = Map();
+if(newuser)
+{
+	response.put("text","Hello *" + user.get("first_name") + "* :smile!: \nI'm here to make *Git* things so much more simpler for you. You can create and delete repos, view user lists and their repos, and much more... You can always type in *Help* to me, and I will instantly be there for you!\n Now let's get started by sending me a *Hi* or *Hello* :bye-bye!:");
+}
+else
+{
+	response.put("text","Woohoo! Glad that you subscribed back! :wink:");
+}
+return response;
+/***************************************message handler**************************************/
+
+response = Map();
+answer = Map();
+params = Map();
+list = List();
+listData = List();
+if(message.containsIgnoreCase("hi") || message.containsIgnoreCase("Hey") || message.containsIgnoreCase("hello"))
+{
+	response = {"text":"Hi there, *" + user.get("first_name").toString().proper() + "*. Choose an option to start working on your *Git*.","suggestions":{"list":{{"text":"List my repos"},{"text":"User List"},{"text":"Contributors"}}}};
+	return response;
+}
+else if(message.containsIgnoreCase("Thanks"))
+{
+	answer.put("text","Any time! " + user.get("first_name"));
+	return answer;
+}
+else if(message.containsIgnoreCase("help"))
+{
+	response = {"text":"I'm here for you! :grinning!: Click anywhere in this box to see what I can do or click one of the options below.","suggestions":{"list":{{"text":"List my repos"},{"text":"User List"},{"text":"Contributors"}}},"card":{"theme":"prompt"},"slides":{{"type":"list","title":"I the *GitControl* bot can:","data":{"Display the list of your repos if you ask for *List*.","Display the list of a user's repos if you ask for *User List*.","Give you the names of contributors, if you ask for *Contributors*."}}}};
+	return response;
+}
+else if(message.equalsIgnoreCase("list") || message.equalsIgnoreCase("list my repos"))
+{
+	buttonList = List();
+	buttonData = List();
+	text = "";
+	messageValue = "";
+	messageAppend = "";
+	params.put("per_page",10);
+	responses = invokeurl
+	[
+		url :"https://api.github.com/user/repos"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	info responses;
+	if(responses.toList().isEmpty())
+	{
+		messageValue = '{"text":"*You* do not have any repositories."}';
+	}
+	else
+	{
+		responseSize = responses.size();
+		item = "";
+		for each  item in responses
+		{
+			if(item.get("description") == null)
+			{
+				data = "Description: _No Description._";
+			}
+			else
+			{
+				data = "Description:" + item.get("description");
+			}
+			buttonList.add("commit");
+			buttonList.add(0);
+			buttonList.add(item.get("full_name"));
+			buttonData.add("branch");
+			buttonData.add(0);
+			buttonData.add(item.get("full_name"));
+			dataName = "### Repository Name: " + "[" + item.get("full_name") + "](" + item.get("html_url") + ")";
+			messageAppend = messageAppend + '{"type":"label","title":"","buttons":[{"label":"Commits", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonList + '","type":"+"},{"label":"Branches", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonData + '","type":"+"}],"data":[{"' + dataName + '":"' + data + '"}]},';
+			buttonList.clear();
+			buttonData.clear();
+		}
+		if(responseSize < 10)
+		{
+			messageAppend = messageAppend.removeLastOccurence(",");
+			messageValue = '{"text":"List of Repositories","card":{"theme":"modern-inline"},"slides":[' + messageAppend + ']}';
+		}
+		else
+		{
+			listData.add("list");
+			listData.add(1);
+			messageAppend = messageAppend.removeLastOccurence(",");
+			messageValue = '{"text":"List of Repositories","card":{"theme":"modern-inline"},"slides":[' + messageAppend + '],"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+		}
+	}
+	response = messageValue;
+	info response;
+	return response;
+}
+else if(message.equalsIgnoreCase("user list"))
+{
+	context = {"id":"user","timeout":60,"params":{{"name":"name","question":"Tell me the *user's* name."}}};
+	response.put("context",context);
+	return response;
+}
+else if(message.equalsIgnoreCase("contributor") || message.equalsIgnoreCase("contributors"))
+{
+	context = {"id":"contributor","timeout":60,"params":{{"name":"name","question":"Enter the *Full name* of the *Repository*."}}};
+	response.put("context",context);
+	return response;
+}
+else
+{
+	list.add({"text":"Help"});
+	context = {"text":"Uhmm :doubt!: I cannot understand that. Please click *Help* to know how I can help you with Git things.","suggestions":{"list":list}};
+	return context;
+}
+/*******************************************context handler***********************************/
+
+listData = List();
+list = List();
+response = Map();
+params = Map();
+message = "";
+if(context_id.equalsIgnoreCase("user"))
+{
+	text = "";
+	messageAppend = "";
+	buttonValue = List();
+	buttonData = List();
+	params.put("per_page",10);
+	responseValue = invokeurl
+	[
+		url :"https://api.github.com/users/" + answers.get("name").get("text") + "/repos"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	if(responseValue.toList().isEmpty())
+	{
+		message = '{"text": "*' + answers.get("name").get("text") + '* does not have any repositories."}';
+	}
+	else if(responseValue.contains("message"))
+	{
+		message = '{"text": "User does not exist."}';
+	}
+	else
+	{
+		responseSize = responseValue.size();
+		item = "";
+		resp = "*The list of repositories of " + answers.get("name").get("text") + "* \n";
+		for each  item in responseValue
+		{
+			if(item.get("description") == null)
+			{
+				data = "Description: _No Description._";
+			}
+			else
+			{
+				data = "Description: " + item.get("description");
+			}
+			buttonValue.add("commit");
+			buttonValue.add(0);
+			buttonValue.add(item.get("full_name"));
+			buttonData.add("branch");
+			buttonData.add(0);
+			buttonData.add(item.get("full_name"));
+			dataName = "### Repository Name: " + "[" + item.get("full_name") + "](" + item.get("html_url") + ")";
+			messageAppend = messageAppend + '{"type":"label","title":"","buttons":[{"label":"Commits", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonValue + '","type":"+"},{"label":"Branches", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonData + '","type":"+"}],"data":[{"' + dataName + '":"' + data + '"}]},';
+			buttonData.clear();
+			buttonValue.clear();
+		}
+		if(responseSize < 10)
+		{
+			messageAppend = messageAppend.removeLastOccurence(",");
+			message = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageAppend + ']}';
+		}
+		else
+		{
+			listData.add("user");
+			listData.add(1);
+			listData.add(answers.get("name").get("text"));
+			messageAppend = messageAppend.removeLastOccurence(",");
+			message = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageAppend + '],"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+		}
+	}
+}
+else if(context_id.equalsIgnoreCase("contributor"))
+{
+	responseValue = invokeurl
+	[
+		url :"https://api.github.com/repos/" + answers.get("name").get("text") + "/contributors"
+		type :GET
+		connection:"github"
+	];
+	info responseValue;
+	if(responseValue.contains("message"))
+	{
+		message = '{"text": "Repository does not exist."}';
+	}
+	else if(responseValue.contains("responseText"))
+	{
+		message = '{"text": "No contributors found for this repository."}';
+	}
+	else
+	{
+		for each  item in responseValue
+		{
+			message = message + '{"type":"label","title":"","data":[{"### Contributions: ' + item.get("contributions") + '":"Contributor: ' + item.get("login") + '"}]},';
+		}
+		message = message.removeLastOccurence(",");
+		info message;
+		message = '{"text":"List of Contributors for ' + answers.get("name").get("text") + '","card":{"theme":"modern-inline"},"slides":[' + message + ']}';
+		info message;
+	}
+}
+response = message.toMap();
+return response;
+/*******************************************************function: gitmore*************************************/
+
+response = Map();
+count = arguments.get("key").get(1).toNumber() + 1;
+info count;
+countEnd = count + 10;
+items = Map();
+list = {"","","","","","","","","",""};
+listData = List();
+params = Map();
+info arguments;
+if(arguments.get("key").get(0).equalsIgnoreCase("issue"))
+{
+	html_url = "";
+	state = "";
+	messageValue = "";
+	params.put("sort","updated");
+	params.put("per_page",10);
+	params.put("page",count);
+	response = invokeurl
+	[
+		url :"https://api.github.com/repos/" + arguments.get("key").get(2) + "/issues"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	if(response.toList().isEmpty())
+	{
+		resp = "No more issues :relaxed!:";
+		answer = '{"card":{"theme":"poll"},"text":"' + resp + '"}';
+		message = answer.toMap();
+		return message;
+	}
+	else
+	{
+		resp = "List of Issues in *" + arguments.get("key").get(2) + "*";
+		size = response.size();
+		for each  items in response
+		{
+			dateString = items.get("created_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+			datesubString = dateString.subString(0,10);
+			dateSeparateString = dateString.subString(11,22);
+			dateString1 = items.get("updated_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+			similarDatesubString = dateString1.subString(0,10);
+			similarDateSeparateString = dateString1.subString(11,22);
+			state = "*State:* " + items.get("state");
+			if(items.get("title").length() > 30)
+			{
+				html_url = "*Title:* " + "[" + items.get("title").subText(0,30) + "](" + items.get("html_url") + ")";
+			}
+			else
+			{
+				html_url = "*Title:* " + "[" + items.get("title") + "](" + items.get("html_url") + ")";
+			}
+			create = "*Created on:* " + datesubString + " *at* " + dateSeparateString;
+			date = "*Updated on:* " + similarDatesubString + " *at* " + similarDateSeparateString;
+			if(items.get("body").replaceAll('"',' ').replaceAll("\n"," ").length() > 1000)
+			{
+				body = "*Body:* " + items.get("body").replaceAll('"',' ').replaceAll("\n"," ").subText(0,1000);
+			}
+			else
+			{
+				body = "*Body:* " + items.get("body").replaceAll('"',' ').replaceAll("\n"," ");
+			}
+			messageValue = messageValue + '{"type":"list","title":"' + html_url + '","data":["' + state + '","' + create + '","' + date + '","' + body + '"]},';
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			messageReturn = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		else
+		{
+			listData.add("issue");
+			listData.add(count);
+			listData.add(arguments.get("key").get(2));
+			messageValue = messageValue.removeLastOccurence("}");
+			messageValue = messageValue + '"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+			messageReturn = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		info messageReturn;
+		messageReturn = messageReturn.toMap();
+		return messageReturn;
+	}
+}
+else if(arguments.get("key").get(0).equalsIgnoreCase("pull"))
+{
+	messageValue = "";
+	numberValue = List();
+	number = List();
+	check = arguments.get("key").get(2);
+	params.put("state","all");
+	params.put("per_page",10);
+	params.put("page",count);
+	responseList = invokeurl
+	[
+		url :"https://api.github.com/repos/" + check + "/pulls"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	size = responseList.size();
+	if(responseList.size() == 0 || responseList.toMap().containKey("documentation_url"))
+	{
+		messageValue = '{"text":"No pull requests :relaxed!:","card":{"title":"Repository: ' + check + '"}}';
+		messageCopy = messageValue;
+	}
+	else
+	{
+		for each  items in responseList
+		{
+			links = items.getJSON("_links");
+			title = items.getJSON("title").replaceAll('"',' ').trim();
+			if(title.length() > 80)
+			{
+				title = title.subText(0,20);
+			}
+			title = "*_Title: " + title + "_*";
+			branch = "*Branch:* " + items.getJSON("head").getJSON("ref");
+			creator = "*Created By:* " + items.getJSON("user").getJSON("login");
+			state = "*State:* " + items.getJSON("state");
+			numberValue.add("review");
+			numberValue.add(links.getJSON("review_comments").getJSON("href"));
+			number.add("issue");
+			number.add(links.getJSON("comments").getJSON("href"));
+			messageValue = messageValue + '{"type":"list","title":"' + title + '","data":["' + branch + '","' + creator + '","' + state + '"],"buttons":[{"label":"Issue Comments","action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + number + '","type":"+"},{"label":"Review Comments","action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + numberValue + '","type":"+"}]},';
+			number.clear();
+			numberValue.clear();
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			messageCopy = '{"text":"List of pull requests in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+			info messageCopy;
+		}
+		else
+		{
+			info "hey " + count;
+			listData.add("pull");
+			listData.add(count);
+			listData.add(check);
+			messageValue = messageValue.removeLastOccurence(",");
+			messageCopy = '{"text":"List of pull requests in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageValue + '],buttons:[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+			info messageCopy;
+		}
+	}
+	messageReturn = messageCopy.toMap();
+	return messageReturn;
+}
+else if(arguments.get("key").get(0).equalsIgnoreCase("list"))
+{
+	messageReturn = "";
+	messageValue = "";
+	buttonValue = List();
+	buttonData = List();
+	params.put("per_page",10);
+	params.put("page",count);
+	responseList = invokeurl
+	[
+		url :"https://api.github.com/user/repos"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	info responseList;
+	if(responseList.toList().isEmpty())
+	{
+		messageReturn = '{"text":"*You* do not have any more repositories."}';
+	}
+	else
+	{
+		size = responseList.size();
+		item = "";
+		for each  item in responseList
+		{
+			if(item.get("description") == null)
+			{
+				data = "Description: _No Description._";
+			}
+			else
+			{
+				data = "Description: " + item.get("description");
+			}
+			buttonValue.add("commit");
+			buttonValue.add(0);
+			buttonValue.add(item.get("full_name"));
+			buttonData.add("branch");
+			buttonData.add(0);
+			buttonData.add(item.get("full_name"));
+			dataName = "### Repository Name: " + "[" + item.get("full_name") + "](" + item.get("html_url") + ")";
+			messageValue = messageValue + '{"type":"label","title":"","buttons":[{"label":"Commits", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonValue + '","type":"+"},{"label":"Branches", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonData + '","type":"+"}],"data":[{"' + dataName + '":"' + data + '"}]},';
+			buttonData.clear();
+			buttonValue.clear();
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			messageReturn = '{"text":"List of Repositories","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		else
+		{
+			listData.add("list");
+			listData.add(count);
+			messageValue = messageValue.removeLastOccurence(",");
+			messageReturn = '{"text":"List of Repositories","card":{"theme":"modern-inline"},"slides":[' + messageValue + '],"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+		}
+	}
+	response = messageReturn;
+	info response;
+	return response;
+}
+else if(arguments.get("key").get(0).equalsIgnoreCase("user"))
+{
+	text = "";
+	messageValue = "";
+	buttonValue = List();
+	buttonData = List();
+	params.put("per_page",10);
+	params.put("page",count);
+	responseList = invokeurl
+	[
+		url :"https://api.github.com/users/" + arguments.get("key").get(2).toString() + "/repos"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	if(responseList.toList().isEmpty())
+	{
+		message = '{"text": "*' + arguments.get("key").get(2) + '* does not have any repositories."}';
+	}
+	else
+	{
+		size = responseList.size();
+		item = "";
+		resp = "*The list of Repositories of " + arguments.get("key").get(2) + "* \n";
+		for each  item in responseList
+		{
+			if(item.get("description") == null)
+			{
+				data = "Description: _No Description._";
+			}
+			else
+			{
+				data = "Description: " + item.get("description");
+			}
+			info item.get("full_name");
+			buttonValue.add("commit");
+			buttonValue.add(0);
+			buttonValue.add(item.get("full_name"));
+			buttonData.add("branch");
+			buttonData.add(0);
+			buttonData.add(item.get("full_name"));
+			dataName = "### Repository name: " + "[" + item.get("full_name") + "](" + item.get("html_url") + ")";
+			messageValue = messageValue + '{"type":"label","title":"","buttons":[{"label":"Commits", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonValue + '","type":"+"},{"label":"Branches", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + buttonData + '","type":"+"}],"data":[{"' + dataName + '":"' + data + '"}]},';
+			buttonData.clear();
+			buttonValue.clear();
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			message = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		else
+		{
+			listData.add("user");
+			listData.add(count);
+			listData.add(arguments.get("key").get(2));
+			messageValue = messageValue.removeLastOccurence(",");
+			message = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + '],"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+		}
+	}
+	response = message.toMap();
+	return response;
+}
+else if(arguments.get("key").get(0).equalsIgnoreCase("del"))
+{
+	listKey = List();
+	messageValue = "";
+	responseList = invokeurl
+	[
+		url :"https://api.github.com/user/repos"
+		type :GET
+		connection:"github"
+	];
+	size = responseList.size();
+	for each  items in list
+	{
+		items = responseList.get(count);
+		listData.add(items.get("full_name"));
+		listData.add("ok");
+		try = "*" + items.get("full_name") + "*";
+		messageValue = messageValue + '{"type":"list","title":"","data":["' + try + '"],"buttons":[{"label":"Delete","action": {"type": "invoke.function","data": {"name": "delete","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"-"}]},';
+		listData.remove(0);
+		listData.remove(0);
+		count = count + 1;
+		if(count == size)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			messageCopy = '{"text":"Select the repository you want to delete. ","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+			break;
+		}
+		if(count == countEnd)
+		{
+			listKey.add("del");
+			listKey.add(count);
+			messageValue = messageValue.removeLastOccurence(",");
+			messageCopy = '{"text":"Select the repository you want to delete.","card":{"theme":"modern-inline"},"slides":[' + messageValue + '],"buttons":[{"label":"View more","action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listKey + '","type":"+"}]}';
+			info messageCopy;
+			break;
+		}
+	}
+	return messageCopy;
+}
+else if(arguments.get("key").get(0).equalsIgnoreCase("org"))
+{
+	messageValue = "";
+	params.put("per_page",10);
+	params.put("page",count);
+	responseList = invokeurl
+	[
+		url :"https://api.github.com/users/" + arguments.get("key").get(2).toString() + "/orgs"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	info responseList;
+	if(responseList.toList().isEmpty())
+	{
+		info "hey";
+		if(count == 1)
+		{
+			message = '{"text":"*' + arguments.get("key").get(2) + '* is not part of any organization.","card":{"title":""}}';
+		}
+		else
+		{
+			message = '{"text":"*' + arguments.get("key").get(2) + '* is not part of any more organization.","card":{"title":""}}';
+		}
+	}
+	else
+	{
+		size = responseList.size();
+		item = "";
+		resp = "*The List of Organizations " + arguments.get("key").get(2) + " is a part of.* \n";
+		for each  item in responseList
+		{
+			info item;
+			if(item.get("description") == null || item.get("description").length() == 0)
+			{
+				data = "Description: _No Description._";
+			}
+			else
+			{
+				data = "Description: " + item.get("description");
+			}
+			dataName = "### Organization name: " + item.get("login");
+			messageValue = messageValue + '{"type":"label","title":"","data":[{"' + dataName + '":"' + data + '"}]},';
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			message = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		else
+		{
+			listData.add("org");
+			listData.add(count);
+			listData.add(arguments.get("key").get(2));
+			messageValue = messageValue.removeLastOccurence("}");
+			messageValue = messageValue + '"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+			message = '{"text":"' + resp + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+	}
+	response = message.toMap();
+	return response;
+}
+else if(arguments.get("key").get(0).equalsIgnoreCase("commit"))
+{
+	messageValue = "";
+	check = arguments.get("key").get(2);
+	params.put("per_page",10);
+	params.put("page",count);
+	responseList = invokeurl
+	[
+		url :"https://api.github.com/repos/" + arguments.get("key").get(2) + "/commits"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	info responseList;
+	if(responseList.containsKey("message"))
+	{
+		if(count == 1)
+		{
+			messageCopy = '{"text":"Git Repository is *empty*.","card":{"title":""}}';
+		}
+		else
+		{
+			messageCopy = '{"text":"No more commits.","card":{"title":""}}';
+		}
+	}
+	else
+	{
+		info "hey";
+		size = responseList.size();
+		for each  items in responseList
+		{
+			itemCopy = items;
+			items = items.get("commit");
+			title = "*Commits in* " + check;
+			committer = "*Committer:* " + items.get("author").get("name");
+			msg = "*Message:* " + items.get("message").replaceAll("\n"," ").replaceAll('"',' ').trim();
+			//info msg;
+			dateString = items.get("author").get("date").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+			firstSection = dateString.subString(0,10);
+			secondSection = dateString.subString(11,22);
+			date = "*Committed on:* " + firstSection + " *at* " + secondSection;
+			messageValue = messageValue + '{"type":"list","title":"","data":["' + committer + '","' + msg + '","' + date + '"],"buttons":[{"label":"Find in GitHub","action":{"type":"open.url","data":{"web":"' + itemCopy.get("html_url") + '"}}}]},';
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			messageCopy = '{"text":"List of commits in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		else
+		{
+			info "hey " + count;
+			listData.add("commit");
+			listData.add(count);
+			listData.add(check);
+			messageValue = messageValue.removeLastOccurence(",");
+			messageCopy = '{"text":"List of commits in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageValue + '],buttons:[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+		}
+	}
+	messageReturn = messageCopy.toMap();
+	return messageReturn;
+}
+else if(arguments.get("key").get(0).equalsIgnoreCase("branch"))
+{
+	messageValue = "";
+	data = "";
+	check = arguments.get("key").get(2);
+	params.put("per_page",10);
+	params.put("page",count);
+	responseList = invokeurl
+	[
+		url :"https://api.github.com/repos/" + arguments.get("key").get(2) + "/branches"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	if(responseList.toList().isEmpty())
+	{
+		if(count == 1)
+		{
+			messageCopy = '{"text":"Git Repository is *empty*.","card":{"title":""}}';
+		}
+		else
+		{
+			messageCopy = '{"text":"No more branches.","card":{"title":""}}';
+		}
+	}
+	else
+	{
+		info "hey";
+		size = responseList.size();
+		for each  items in responseList
+		{
+			responses = invokeurl
+			[
+				url :"https://api.github.com/repos/" + arguments.get("key").get(2) + "/branches/" + items.get("name")
+				type :GET
+				connection:"github"
+			];
+			info items.get("name");
+			html = "[" + items.get("name") + "](" + responses.get("_links").get("html") + ")";
+			data = data + '"' + html + '",';
+		}
+		if(size < 10)
+		{
+			data = data.removeLastOccurence(",");
+			messageValue = messageValue + '{"type":"list","title":"","data":[' + data + ']}';
+			messageCopy = '{"text":"List of branches in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+			info messageCopy;
+		}
+		else
+		{
+			listData.add("branch");
+			listData.add(count);
+			listData.add(check);
+			data = data.removeLastOccurence(",");
+			messageValue = messageValue + '{"type":"list","title":"","data":[' + data + '],buttons:[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+			messageCopy = '{"text":"List of branches in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+			info messageCopy;
+		}
+	}
+	messageReturn = messageCopy.toMap();
+	return messageReturn;
+}
+return response;
+/************************************************function:issue*************************************/
+
+keyFirstValue = "";
+keySecondValue = "";
+keyFirstValue = arguments.get("key").get(1).toString();
+keySecondValue = arguments.get("key").get(0).toString();
+count = arguments.get("key").get(2);
+list = {"","","","","","","","","",""};
+listData = List();
+type = List();
+type = arguments.get("key");
+message = Map();
+params = Map();
+messageData = "";
+user = "";
+comment = "";
+params.put("per_page",10);
+params.put("page",count);
+count = count + 1;
+if(keySecondValue.equals("issue"))
+{
+	responses = invokeurl
+	[
+		url :keyFirstValue
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	if(responses.size() == 0 || responses.toMap().containKey("documentation_url"))
+	{
+		messageValue = '{"text":"No comments.","card":{"title":"Issue Comments"}}';
+	}
+	else
+	{
+		size = responses.size();
+		for each  items in responses
+		{
+			user = items.getJSON("user").getJSON("login").toString().trim();
+			comment = items.getJSON("body").toString().trim().replaceAll('"','');
+			messageData = messageData + '{"type":"label","title":"","data":[{"User: ' + user + '":"Comment: ' + comment + '"}]},';
+		}
+		if(size < 10)
+		{
+			messageData = messageData.removeLastOccurence(",");
+			messageValue = '{"text":"Issue Comments","card":{"theme":"modern-inline"},"slides":[' + messageData + ']}';
+		}
+		else
+		{
+			listData.add(keySecondValue);
+			listData.add(keyFirstValue);
+			listData.add(count);
+			messageData = messageData.removeLastOccurence("}");
+			messageData = messageData + '"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+			messageValue = '{"text":"Issue Comments","card":{"theme":"modern-inline"},"slides":[' + messageData + ']}';
+		}
+	}
+}
+else if(keySecondValue.equals("review"))
+{
+	responses = invokeurl
+	[
+		url :keyFirstValue
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	if(responses.size() == 0 || responses.toMap().containKey("documentation_url"))
+	{
+		messageValue = '{"text":"No comments.","card":{"title":"Review Comments"}}';
+	}
+	else
+	{
+		size = responses.size();
+		for each  items in responses
+		{
+			user = items.getJSON("user").getJSON("login").toString().trim();
+			comment = items.getJSON("body").toString().trim().replaceAll('"','');
+			messageData = messageData + '{"type":"label","title":"","data":[{"User: ' + user + '":"Comment: ' + comment + '"}]},';
+		}
+		if(size < 10)
+		{
+			messageData = messageData.removeLastOccurence(",");
+			messageValue = '{"text":"Review Comments","card":{"theme":"modern-inline"},"slides":[' + messageData + ']}';
+		}
+		else
+		{
+			listData.add(keySecondValue);
+			listData.add(keyFirstValue);
+			listData.add(count);
+			messageData = messageData.removeLastOccurence("}");
+			messageData = messageData + '"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+			messageValue = '{"text":"Review Comments","card":{"theme":"modern-inline"},"slides":[' + messageData + ']}';
+		}
+	}
+}
+info messageValue;
+message = messageValue.toMap();
+return message;
+/*****************************************command: githubsearch*************************/
+/***Execution handleer*********/
+
+message = Map();
+messageValue = "";
+listValue = List();
+listData = List();
+params = Map();
+info selections;
+name = "";
+argumentsList = arguments.toList(" ");
+if(selections.size() == 0)
+{
+	messageValue = '{"text":"/githusearch user johnms (or)\n/githubsearch repository johnms/john","card":{"theme":"prompt","title":"Select one of the options."}}';
+}
+else if(selections.size() == 1 && selections.get(0).get("id").equalsIgnoreCase("1") && argumentsList.size() == 2)
+{
+	responses = invokeurl
+	[
+		url :"https://api.github.com/users/" + argumentsList.get(1)
+		type :GET
+		connection:"github"
+	];
+	info responses;
+	if(responses.containsKey("message"))
+	{
+		messageValue = '{"text":"No users by that name."}';
+	}
+	else
+	{
+		if(responses.get("name") == null)
+		{
+			name = "Not provided";
+		}
+		else
+		{
+			name = responses.get("name");
+		}
+		if(responses.get("email") == null)
+		{
+			email = "Not provided";
+		}
+		else
+		{
+			email = responses.get("email");
+		}
+		listValue.add("user");
+		listValue.add(0);
+		listValue.add(argumentsList.get(1));
+		listData.add("org");
+		listData.add(0);
+		listData.add(argumentsList.get(1));
+		messageValue = '{"text":"*Username:* ' + argumentsList.get(1) + '\n*Name:* ' + name + '\n*Email:* ' + email + '","card":{"thumbnail":"' + responses.get("avatar_url") + '","theme":"modern-inline"},"buttons":[{"label":"Find in GitHub","action":{"type":"open.url","data":{"web":"' + responses.get("html_url") + '"}},"type":"+"},{"label":"Repositories", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listValue + '","type":"+"},{"label":"Organizations", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+	}
+}
+else if(selections.size() == 1 && selections.get(0).get("id").equalsIgnoreCase("1") && argumentsList.size() != 2)
+{
+	messageValue = '{"text":"/githusearch user johnms (or)\n/githubsearch repository johnms/john","card":{"theme":"prompt","title":"Please enter a valid username :neutral!:"}}';
+}
+else if(selections.size() == 1 && selections.get(0).get("id").equalsIgnoreCase("2") && argumentsList.size() == 2)
+{
+	params.put("q",argumentsList.get(1));
+	responses = invokeurl
+	[
+		url :"https://api.github.com/search/repositories"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	info responses;
+	if(responses.get("total_count") == 0)
+	{
+		messageValue = '{"text":"No repositories by that name."}';
+	}
+	else
+	{
+		temporary = responses.get("items").get(0);
+		dateString = temporary.get("created_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+		dateSectionOne = dateString.subString(0,10);
+		dateSectionTwo = dateString.subString(11,22);
+		dateString1 = temporary.get("updated_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+		dateSectionFirst = dateString1.subString(0,10);
+		dateSectionSecond = dateString1.subString(11,22);
+		info dateString1;
+		if(temporary.get("description") == null)
+		{
+			description = "No description provided";
+		}
+		else
+		{
+			description = temporary.get("description");
+		}
+		listValue.add("commit");
+		listValue.add(0);
+		listValue.add(argumentsList.get(1));
+		listData.add("branch");
+		listData.add(0);
+		listData.add(argumentsList.get(1));
+		name = "*" + argumentsList.get(1) + "*";
+		messageValue = '{"text":"Repository: ' + name + '\n*Owner:* ' + temporary.get("owner").get("login") + '\n*Created on:* ' + dateSectionOne + ' *at* ' + dateSectionTwo + '\n*Updated on:* ' + dateSectionFirst + ' *at* ' + dateSectionSecond + '\n*Description:* ' + description + '","card":{"theme":"modern-inline"},"buttons":[{"label":"Find in GitHub","action":{"type":"open.url","data":{"web":"' + temporary.get("html_url") + '"}},"type":"+"},{"label":"Commits", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listValue + '","type":"+"},{"label":"Branches", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+	}
+}
+else if(selections.size() == 1 && selections.get(0).get("id").equalsIgnoreCase("2") && argumentsList.size() != 2)
+{
+	messageValue = '{"text":"/githusearch user johnms (or)\n/githubsearch repository johnms/john","card":{"theme":"prompt","title":"Please enter a valid repository name :neutral!:"}}';
+}
+else if(selections.get(1).getJSON("id").get(0).equals("repo"))
+{
+	params.put("q",selections.get(1).getJSON("title"));
+	responses = invokeurl
+	[
+		url :"https://api.github.com/search/repositories"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	//info responses;
+	temporary = responses.get("items").get(0);
+	dateString = temporary.get("created_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+	dateSectionOne = dateString.subString(0,10);
+	dateSectionTwo = dateString.subString(11,22);
+	dateString1 = temporary.get("updated_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+	dateSectionFirst = dateString1.subString(0,10);
+	dateSectionSecond = dateString1.subString(11,22);
+	info dateString1;
+	if(temporary.get("description") == null)
+	{
+		description = "No description provided";
+	}
+	else
+	{
+		description = temporary.get("description");
+	}
+	listValue.add("commit");
+	listValue.add(0);
+	listValue.add(selections.get(1).getJSON("title"));
+	listData.add("branch");
+	listData.add(0);
+	listData.add(selections.get(1).getJSON("title"));
+	name = "*" + selections.get(1).getJSON("title") + "*";
+	messageValue = '{"text":"Repository: ' + name + '\n*Owner:* ' + temporary.get("owner").get("login") + '\n*Created on:* ' + dateSectionOne + ' *at* ' + dateSectionTwo + '\n*Updated on:* ' + dateSectionFirst + ' *at* ' + dateSectionSecond + '\n*Description:* ' + description + '","card":{"theme":"modern-inline"},"buttons":[{"label":"Find in GitHub","action":{"type":"open.url","data":{"web":"' + temporary.get("html_url") + '"}},"type":"+"},{"label":"Commits", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listValue + '","type":"+"},{"label":"Branches", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+}
+else if(selections.get(1).getJSON("id").get(0).equals("user"))
+{
+	query_map = Map();
+	response_map = zoho.cliq.getRecords("webhook",query_map);
+	info response_map;
+	responses = invokeurl
+	[
+		url :"https://api.github.com/users/" + selections.get(1).getJSON("title")
+		type :GET
+		connection:"github"
+	];
+	if(responses.get("name") == null)
+	{
+		name = "Not provided";
+	}
+	else
+	{
+		name = responses.get("name");
+	}
+	if(responses.get("email") == null)
+	{
+		email = "Not provided";
+	}
+	else
+	{
+		email = responses.get("email");
+	}
+	listValue.add("user");
+	listValue.add(0);
+	listValue.add(selections.get(1).getJSON("title"));
+	listData.add("org");
+	listData.add(0);
+	listData.add(selections.get(1).getJSON("title"));
+	messageValue = '{"text":"*Username:* ' + selections.get(1).getJSON("title") + '\n*Name:* ' + name + '\n*Email:* ' + email + '","card":{"thumbnail":"' + responses.get("avatar_url") + '","theme":"modern-inline"},"buttons":[{"label":"Find in GitHub","action":{"type":"open.url","data":{"web":"' + responses.get("html_url") + '"}},"type":"+"},{"label":"Repositories", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listValue + '","type":"+"},{"label":"Organizations", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+}
+else if(selections.get(1).getJSON("title").equals("No repositories by that name."))
+{
+	messageValue = '{"text":"No repositories by that name."}';
+}
+else if(selections.get(1).getJSON("title").equals("No users by that name."))
+{
+	messageValue = '{"text":"No users by that name."}';
+}
+message = messageValue.toMap();
+return message;
+/**********************Suggestion handler*************************/
+
+listUser = List();
+listData = List();
+param = Map();
+listThing = List();
+if(selections.size() == 0)
+{
+	listUser.add({"title":"User","id":"1"});
+	listUser.add({"title":"Repository","id":"2"});
+	return listUser;
+}
+title = selections.get(0).get("title");
+query = arguments.get(0);
+if(arguments.len() == 0)
+{
+	info "Hello";
+}
+else if(selections.size() == 1)
+{
+	if(title.equals("Repository"))
+	{
+		param.put("q",query);
+		param.put("sort","stars");
+		listThing.add("repo");
+		response = invokeurl
+		[
+			url :"https://api.github.com/search/repositories"
+			type :GET
+			parameters:param
+			connection:"github"
+		];
+		info response;
+		if(response.get("total_count") == 0)
+		{
+			listData.add({"title":"No repositories by that name.","id":"0"});
+		}
+		else
+		{
+			repolist = response.get("items");
+			for each  repo in repolist
+			{
+				info listThing;
+				listData.add({"title":repo.get("full_name"),"id":"" + listThing.toString()});
+			}
+		}
+	}
+	else if(title.equals("User"))
+	{
+		param.put("q",query);
+		info arguments;
+		listThing.add("user");
+		response = invokeurl
+		[
+			url :"https://api.github.com/search/users"
+			type :GET
+			parameters:param
+			connection:"github"
+		];
+		info response;
+		if(response.get("total_count") == 0)
+		{
+			listData.add({"title":"No users by that name.","id":"0"});
+		}
+		else
+		{
+			repolist = response.get("items");
+			for each  repo in repolist
+			{
+				info repo;
+				listData.add({"title":repo.get("login"),"id":"" + listThing,"imageurl":repo.get("avatar_url")});
+			}
+		}
+	}
+}
+return listData;
+/************************command: gitissue********************/
+/****execution handler***********/
+
+params = Map();
+text = "";
+message = Map();
+messageValue = "";
+list = {"","","","","","","","","",""};
+listValue = List();
+count = 1;
+argumentsList = arguments.toList(" ");
+if(selections.size() == 0)
+{
+	responseMessage = '{"text":"/githissue list johnms/john (or)\n/gitissue lock johnms/john 3 (or)\n/gitissue lock johnms/john 3","card":{"theme":"prompt","title":"Select one of the options."}}';
+	message = responseMessage.toMap();
+	return message;
+}
+else if(selections.size() == 1 && argumentsList.size() == 2)
+{
+	params.put("sort","updated");
+	params.put("per_page",10);
+	response = invokeurl
+	[
+		url :"https://api.github.com/repos/" + argumentsList.get(1) + "/issues"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	info response;
+	if(response.toList().isEmpty())
+	{
+		responseMessage = '{"text":"No issues :relaxed!:","card":{"title":""}}';
+		message = responseMessage.toMap();
+		return message;
+	}
+	else if(response.containsKey("message"))
+	{
+		responseMessage = '{"text":"No repositories by that name.","card":{"title":""}}';
+		message = responseMessage.toMap();
+		return message;
+	}
+	else
+	{
+		responseMessage = "List of Issues in *" + argumentsList.get(1) + "*";
+		size = response.size();
+		for each  items in response
+		{
+			dateString = items.get("created_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+			subStringOne = dateString.subString(0,10);
+			subStringTwo = dateString.subString(11,22);
+			dateString1 = items.get("updated_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+			dateStringOne = dateString1.subString(0,10);
+			dateStringTwo = dateString1.subString(11,22);
+			state = "*State:* " + items.get("state");
+			if(items.get("title").length() > 30)
+			{
+				title = "*Title:* " + "[" + items.get("title").subText(0,30) + "](" + items.get("html_url") + ")";
+			}
+			else
+			{
+				title = "*Title:* " + "[" + items.get("title") + "](" + items.get("html_url") + ")";
+			}
+			created = "*Created on:* " + subStringOne + " *at* " + subStringTwo;
+			update = "*Updated on:* " + dateStringOne + " *at* " + dateStringTwo;
+			if(items.get("body").replaceAll('"',' ').replaceAll("\n"," ").length() > 1000)
+			{
+				body = "*Body:* " + items.get("body").replaceAll('"',' ').replaceAll("\n"," ").subText(0,1000);
+			}
+			else
+			{
+				body = "*Body:* " + items.get("body").replaceAll('"',' ').replaceAll("\n"," ");
+			}
+			messageValue = messageValue + '{"type":"list","title":"' + title + '","data":["' + state + '","' + created + '","' + update + '","' + body + '"]},';
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			messageData = '{"text":"' + responseMessage + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		else
+		{
+			listValue.add("issue");
+			listValue.add(count);
+			listValue.add(argumentsList.get(1));
+			messageValue = messageValue.removeLastOccurence("}");
+			messageValue = messageValue + '"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listValue + '","type":"+"}]}';
+			messageData = '{"text":"' + responseMessage + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		messageData = messageData.toMap();
+		return messageData;
+	}
+}
+else if(selections.size() == 1 && argumentsList.size() != 2)
+{
+	responseMessage = '{"text":"/githissue list johnms/john (or)\n/gitissue lock johnms/john 3 (or)\n/gitissue lock johnms/john 3","card":{"theme":"prompt","title":"Please enter a valid repository name :neutral!:"}}';
+	message = responseMessage.toMap();
+	return message;
+}
+else if(selections.size() == 2 && selections.get(1).get("title").equalsIgnoreCase("No repositories by that name."))
+{
+	responseMessage = "No repositories by that name.";
+}
+else if(selections.size() == 2 && (selections.get(0).get("title").equalsIgnoreCase("lock") || selections.get(0).get("title").equalsIgnoreCase("unlock")))
+{
+	responseMessage = '{"text":"/githissue list johnms/john (or)\n/gitissue lock johnms/john 3 (or)\n/gitissue lock johnms/john 3","card":{"theme":"prompt","title":"Please enter the right issue number :doubt!: "}}';
+	message = responseMessage.toMap();
+	return message;
+}
+else if(selections.size() == 2 && selections.get(1).get("id").get(0).equalsIgnoreCase("list"))
+{
+	params.put("sort","updated");
+	params.put("per_page",10);
+	response = invokeurl
+	[
+		url :"https://api.github.com/repos/" + selections.get(1).get("title") + "/issues"
+		type :GET
+		parameters:params
+		connection:"github"
+	];
+	info response;
+	if(response.toList().isEmpty())
+	{
+		responseMessage = "No issues :relaxed!:";
+	}
+	else
+	{
+		responseMessage = "List of Issues in *" + selections.get(1).get("title") + "*";
+		size = response.size();
+		for each  items in response
+		{
+			dateString = items.get("created_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+			subStringOne = dateString.subString(0,10);
+			subStringTwo = dateString.subString(11,22);
+			dateString1 = items.get("updated_at").toTime("yyyy-MM-dd'T'HH:mm:ssXXX").toString("dd/MM/yyyy HH:mm:ss aaa",user.get("timezone"));
+			dateStringOne = dateString1.subString(0,10);
+			dateStringTwo = dateString1.subString(11,22);
+			state = "*State:* " + items.get("state");
+			title = "*Title:* " + "[" + items.get("title") + "](" + items.get("html_url") + ")";
+			create = "*Created on:* " + subStringOne + " *at* " + subStringTwo;
+			update = "*Updated on:* " + dateStringOne + " *at* " + dateStringTwo;
+			body = "*Body:* " + items.get("body");
+			messageValue = messageValue + '{"type":"list","title":"' + title + '","data":["' + state + '","' + create + '","' + update + '","' + body + '"]},';
+		}
+		if(size < 10)
+		{
+			messageValue = messageValue.removeLastOccurence(",");
+			messageData = '{"text":"' + responseMessage + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		else
+		{
+			listValue.add("issue");
+			listValue.add(count);
+			listValue.add(selections.get(1).get("title"));
+			messageValue = messageValue.removeLastOccurence("}");
+			messageValue = messageValue + '"buttons":[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listValue + '","type":"+"}]}';
+			messageData = '{"text":"' + responseMessage + '","card":{"theme":"modern-inline"},"slides":[' + messageValue + ']}';
+		}
+		return messageData;
+	}
+}
+else if(selections.size() == 3 && selections.get(2).get("title").equalsIgnoreCase("No issues created for the given repository."))
+{
+	responseMessage = "No issues created for the given repository.";
+}
+else if(selections.size() == 3 && selections.get(2).get("id").get(0).equalsIgnoreCase("lock"))
+{
+	url = "https://api.github.com/repos/" + selections.get(2).get("id").get(1) + "/issues/" + selections.get(2).get("title") + "/lock";
+	info url;
+	response = invokeurl
+	[
+		url :url
+		type :PUT
+		connection:"github"
+	];
+	info response;
+	if(response.contains("message"))
+	{
+		responseMessage = "Must have Admin rights to *" + selections.get(2).get("id").get(1) + "*";
+	}
+	else
+	{
+		responseMessage = "You locked issue *#" + selections.get(2).get("title") + "* in *" + selections.get(2).get("id").get(1) + "*";
+	}
+}
+else if(selections.size() == 3 && selections.get(2).get("id").get(0).equalsIgnoreCase("unlock"))
+{
+	response = invokeurl
+	[
+		url :"https://api.github.com/repos/" + selections.get(2).get("id").get(1) + "/issues/" + selections.get(2).get("title") + "/lock"
+		type :DELETE
+		connection:"github"
+	];
+	info response;
+	if(response.contains("message"))
+	{
+		responseMessage = "Must have Admin rights to *" + selections.get(2).get("id").get(1) + "*";
+	}
+	else
+	{
+		responseMessage = "You unlocked issue *#" + selections.get(2).get("title") + "* in *" + selections.get(2).get("id").get(1) + "*";
+	}
+}
+answer = '{"card":{"theme":"poll"},"text":"' + responseMessage + '"}';
+message = answer.toMap();
+return message;
+/***************************suggestion handler***********/
+
+list = List();
+listData = List();
+param = Map();
+dataValue = List();
+listValue = List();
+if(selections.size() == 0)
+{
+	list.add({"title":"List","id":"1","description":"Lists the issues of one of your repositories."});
+	list.add({"title":"Lock","id":"2","description":"Locks the conversation on an issue of your choice."});
+	list.add({"title":"Unlock","id":"3","description":"Unlocks the conversation on an issue of your choice."});
+	return list;
+}
+title = selections.get(0).get("title");
+value = arguments.get(0);
+if(arguments.len() == 0)
+{
+	info "Hello";
+}
+else if(selections.size() == 1)
+{
+	if(title.equals("List"))
+	{
+		param.put("q",value);
+		param.put("sort","stars");
+		dataValue.add("list");
+		response = invokeurl
+		[
+			url :"https://api.github.com/user/repos"
+			type :GET
+			connection:"github"
+		];
+		if(response.toList().isEmpty())
+		{
+			listData.add({"title":"No repositories by that name.","id":"0"});
+		}
+		else
+		{
+			for each  item in response
+			{
+				dataValue.add(item.get("issues_url"));
+				listData.add({"title":item.get("full_name"),"id":"" + dataValue.toString()});
+				dataValue.remove(1);
+			}
+		}
+		return listData;
+	}
+	else if(title.equals("Lock") || title.equals("Unlock"))
+	{
+		param.put("q",value);
+		param.put("sort","stars");
+		response = invokeurl
+		[
+			url :"https://api.github.com/search/repositories"
+			type :GET
+			parameters:param
+			connection:"github"
+		];
+		if(response.get("total_count") == 0)
+		{
+			listData.add({"title":"No repositories by that name.","id":"0"});
+		}
+		else
+		{
+			responseList = response.get("items");
+			for each  item in responseList
+			{
+				listData.add({"title":item.get("full_name")});
+			}
+		}
+		return listData;
+	}
+}
+else if(selections.size() == 2 && (selections.get(0).get("title").equalsIgnoreCase("lock") || selections.get(0).get("title").equalsIgnoreCase("unlock")))
+{
+	itemNumber = 0;
+	if(selections.get(0).get("title").equalsIgnoreCase("lock"))
+	{
+		dataValue.add("lock");
+	}
+	else if(selections.get(0).get("title").equalsIgnoreCase("unlock"))
+	{
+		dataValue.add("unlock");
+	}
+	response = invokeurl
+	[
+		url :"https://api.github.com/repos/" + selections.get(1).get("title") + "/issues"
+		type :GET
+		connection:"github"
+	];
+	info response;
+	if(response.toList().isEmpty())
+	{
+		listValue.add({"title":"No issues created for the given repository.","id":"3"});
+	}
+	dataValue.add(selections.get(1).get("title"));
+	for each  item in response
+	{
+		itemNumber = item.get("number");
+		listValue.add({"title":"" + itemNumber,"id":dataValue.toString()});
+	}
+}
+return listValue;
+/******************************command:gitpull*********************************/
+
+message = Map();
+messageInitial = "";
+messageFinal = "";
+title = "";
+branch = "";
+creator = "";
+state = "";
+words = "";
+number = List();
+numberValue = List();
+param = Map();
+listData = List();
+argumentsList = arguments.toList(" ");
+if(selections.size() == 0 && argumentsList.size() == 1)
+{
+	check = argumentsList.get(0);
+	param.put("state","all");
+	param.put("per_page",10);
+	responses = invokeurl
+	[
+		url :"https://api.github.com/repos/" + check + "/pulls"
+		type :GET
+		parameters:param
+		connection:"github"
+	];
+	info responses;
+	responseList = responses;
+	if(responses.containsKey("message"))
+	{
+		messageInitial = '{"text":"No repositories by that name."}';
+		messageFinal = messageInitial;
+	}
+	else if(responseList.size() == 0 || responseList.toMap().containKey("documentation_url"))
+	{
+		messageInitial = '{"text":"No pull requests :relaxed!:","card":{"title":"Repository: ' + check + '"}}';
+		messageFinal = messageInitial;
+	}
+	else
+	{
+		size = responses.size();
+		for each  reponseList in responses
+		{
+			links = reponseList.getJSON("_links");
+			title = "*_Title: " + reponseList.getJSON("title") + "_*";
+			branch = "*Branch:* " + reponseList.getJSON("head").getJSON("ref");
+			creator = "*Created By:* " + reponseList.getJSON("user").getJSON("login");
+			state = "*State:* " + reponseList.getJSON("state");
+			numberValue.add("review");
+			numberValue.add(links.getJSON("review_comments").getJSON("href"));
+			numberValue.add(1);
+			number.add("issue");
+			number.add(links.getJSON("comments").getJSON("href"));
+			number.add(1);
+			messageInitial = messageInitial + '{"type":"list","title":"' + title + '","data":["' + branch + '","' + creator + '","' + state + '"],"buttons":[{"label":"Issue Comments","action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + number + '","type":"+"},{"label":"Review Comments","action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + numberValue + '","type":"+"}]},';
+			number.clear();
+			numberValue.clear();
+		}
+		if(size < 10)
+		{
+			messageInitial = messageInitial.removeLastOccurence(",");
+			messageFinal = '{"text":"List of pull requests in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageInitial + ']}';
+		}
+		else
+		{
+			listData.add("pull");
+			listData.add(1);
+			listData.add(check);
+			messageInitial = messageInitial.removeLastOccurence(",");
+			messageFinal = '{"text":"List of pull requests in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageInitial + '],buttons:[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+		}
+	}
+}
+else if(selections.size() == 0 && argumentsList.size() != 1)
+{
+	messageInitial = '{"text":"/gitpull johnms/john","card":{"theme":"prompt","title":"No repositories by that name."}}';
+	messageFinal = messageInitial;
+}
+else if(selections.get(0).get("title").equalsIgnoreCase("No repositories by that name."))
+{
+	messageInitial = '{"text":"No repositories by that name."}';
+	messageFinal = messageInitial;
+}
+else
+{
+	check = selections.get(0).get("title");
+	param.put("state","all");
+	param.put("per_page",10);
+	responses = invokeurl
+	[
+		url :"https://api.github.com/repos/" + check + "/pulls"
+		type :GET
+		parameters:param
+		connection:"github"
+	];
+	responseList = responses;
+	if(responseList.size() == 0 || responseList.toMap().containKey("documentation_url"))
+	{
+		messageInitial = '{"text":"No pull requests :relaxed!:","card":{"title":"Repository: ' + check + '"}}';
+		messageFinal = messageInitial;
+	}
+	else
+	{
+		size = responses.size();
+		for each  reponseList in responses
+		{
+			links = reponseList.getJSON("_links");
+			title = "*_Title: " + reponseList.getJSON("title") + "_*";
+			branch = "*Branch:* " + reponseList.getJSON("head").getJSON("ref");
+			creator = "*Created By:* " + reponseList.getJSON("user").getJSON("login");
+			state = "*State:* " + reponseList.getJSON("state");
+			numberValue.add("review");
+			numberValue.add(links.getJSON("review_comments").getJSON("href"));
+			numberValue.add(1);
+			number.add("issue");
+			number.add(links.getJSON("comments").getJSON("href"));
+			number.add(1);
+			messageInitial = messageInitial + '{"type":"list","title":"' + title + '","data":["' + branch + '","' + creator + '","' + state + '"],"buttons":[{"label":"Issue Comments","action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + number + '","type":"+"},{"label":"Review Comments","action": {"type": "invoke.function","data": {"name": "issue","owner": "muffid3@gmail.com"}},"key":"' + numberValue + '","type":"+"}]},';
+			
+			number.clear();
+			numberValue.clear();
+		}
+		if(size < 10)
+		{
+			messageInitial = messageInitial.removeLastOccurence(",");
+			messageFinal = '{"text":"List of pull requests in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageInitial + ']}';
+		}
+		else
+		{
+			listData.add("pull");
+			listData.add(1);
+			listData.add(check);
+			messageInitial = messageInitial.removeLastOccurence(",");
+			messageFinal = '{"text":"List of pull requests in *' + check + '*","card":{"theme":"modern-inline"},"slides":[' + messageInitial + '],buttons:[{"label":"View more", "action": {"type": "invoke.function","data": {"name": "gitmore","owner": "muffid3@gmail.com"}},"key":"' + listData + '","type":"+"}]}';
+		}
+	}
+}
+message = messageFinal.toMap();
+return message;
+/*****suggestion handler**********/
+
+param = Map();
+list = List();
+listData = List();
+argumentsList = arguments;
+param.put("q",argumentsList);
+param.put("sort","stars");
+listData.add("repo");
+if(selections.size() == 0)
+{
+	response = invokeurl
+	[
+		url :"https://api.github.com/search/repositories"
+		type :GET
+		parameters:param
+		connection:"github"
+	];
+	if(response.get("total_count") == 0)
+	{
+		list.add({"title":"No repositories by that name.","id":"0"});
+	}
+	else
+	{
+		responseList = response.get("items");
+		for each  item in responseList
+		{
+			listData.add(item.getJSON("full_name").toLowerCase());
+			list.add({"title":item.get("full_name"),"id":"" + listData.toString()});
+			listData.remove(1);
+		}
+	}
+}
+return list;
+/*************************command:gitwatch***********************/
+/*****execution handler***/
+
+response = Map();
+argumentsList = arguments.toList(" ");
+if(selections.size() == 0 && argumentsList.size() == 1)
+{
+	select = argumentsList.get(0);
+	responses = invokeurl
+	[
+		url :"https://api.github.com/user/subscriptions/" + select
+		type :PUT
+		connection:"github"
+	];
+	if(responses.toList().isEmpty())
+	{
+		responseMessage = "You are now watching *" + select + "*";
+	}
+	else if(responses.containsKey("message"))
+	{
+		responseMessage = "No repositories by that name.";
+	}
+}
+else if(selections.size() == 0 && argumentsList.size() != 1)
+{
+	responseMessage = '{"text":"/gitwatch johnms/john","card":{"theme":"prompt","title":"Enter the valid repository name that you want to keep an eye on. "}}';
+	response = responseMessage.toMap();
+	return response;
+}
+else if(selections.get(0).get("title").equalsIgnoreCase("No repositories by that name."))
+{
+	responseMessage = "No repositories by that name.";
+}
+else
+{
+	select = selections.get(0).get("title");
+	responses = invokeurl
+	[
+		url :"https://api.github.com/user/subscriptions/" + select
+		type :PUT
+		connection:"github"
+	];
+	responseMessage = "You are now watching *" + select + "*";
+}
+answer = '{"card":{"theme":"poll"},"text":"' + responseMessage + '"}';
+response = answer.toMap();
+return response;
+/*********suggestion handler******/
+
+list = List();
+param = Map();
+argumentsList = arguments.get(0);
+param.put("q",argumentsList);
+param.put("sort","stars");
+response = invokeurl
+[
+	url :"https://api.github.com/search/repositories"
+	type :GET
+	parameters:param
+	connection:"github"
+];
+if(response.get("total_count") == 0)
+{
+	list.add({"title":"No repositories by that name.","id":"0"});
+}
+else
+{
+	responseList = response.get("items");
+	for each  item in responseList
+	{
+		list.add({"title":item.get("full_name"),"id":"1"});
+	}
+}
+return list;
+/****************/
